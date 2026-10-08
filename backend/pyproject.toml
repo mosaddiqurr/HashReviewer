@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hashreviewer"
+version = "1.0.0"
+description = "Optional hash-only reputation proxy for HashReviewer"
+readme = {text = "HashReviewer optional reputation proxy", content-type = "text/plain"}
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "Mosaddiqur Rahman"}]
+dependencies = [
+  "fastapi==0.139.2",
+  "httpx==0.28.1",
+  "pydantic-settings==2.14.2",
+  "uvicorn==0.51.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0.3,<10", "ruff>=0.15.22,<1", "pip-audit>=2.9,<3"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --basetemp=../.pytest-tmp"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
+ignore = ["E501", "ASYNC240"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]

@@ -1,0 +1,95 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - run: npm audit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - run: npm run e2e:production
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/pyproject.toml
+            backend/requirements.txt
+      - run: python -m pip install -r requirements.txt -e ".[dev]"
+      - run: python -m pytest
+      - run: python -m ruff check .
+      - run: python -m pip_audit -r requirements.txt
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile reputation config --quiet
+      - run: docker compose --profile reputation build
+      - name: Verify static routes, assets, and security headers
+        run: |
+          docker compose up -d --wait --wait-timeout 60
+          python - <<'PY'
+          import urllib.request
+          import urllib.error
+          base = "http://127.0.0.1:8080"
+          for path in ["/", "/check", "/verify", "/compare", "/about"]:
+              with urllib.request.urlopen(base + path, timeout=5) as response:
+                  assert response.status == 200
+                  assert b'<div id="root">' in response.read()
+                  assert "worker-src 'self'" in response.headers["Content-Security-Policy"]
+                  assert response.headers["X-Content-Type-Options"] == "nosniff"
+          with urllib.request.urlopen(base + "/logo-hash.png", timeout=5) as response:
+              assert response.headers["Content-Type"] == "image/png"
+          for path, expected in [("/assets/missing.js", 404), ("/api/reputation/status", 503)]:
+              try:
+                  urllib.request.urlopen(base + path, timeout=5)
+              except urllib.error.HTTPError as error:
+                  assert error.code == expected
+              else:
+                  raise AssertionError(path)
+          PY
+      - name: Verify optional backend without credentials
+        run: |
+          docker compose --profile reputation up -d --wait --wait-timeout 60
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+          # Allow the gateway's cached absent-backend DNS answer to expire.
+          for attempt in range(25):
+              try:
+                  response = urllib.request.urlopen("http://127.0.0.1:8080/api/reputation/status", timeout=5)
+              except OSError:
+                  if attempt == 24:
+                      raise
+                  time.sleep(2)
+              else:
+                  with response:
+                      assert json.load(response) == {"available": False}
+                      assert response.headers["Cache-Control"] == "no-store"
+                  break
+          PY
+      - if: always()
+        run: docker compose --profile reputation down

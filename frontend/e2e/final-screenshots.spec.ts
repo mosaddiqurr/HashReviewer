@@ -1,0 +1,32 @@
+import { mkdir } from "node:fs/promises";
+import { expect, test } from "@playwright/test";
+import { createHash } from "node:crypto";
+
+test("generate fresh documentation screenshots", async ({ page }) => {
+  test.skip(process.env.GENERATE_SCREENSHOTS !== "1", "Run npm run screenshots to regenerate documentation assets.");
+  await mkdir("../docs/screenshots", { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.route((url) => url.pathname.startsWith("/api/"), (route) => route.fulfill({ json: { available: false } }));
+  const content = Buffer.from("HashReviewer integrity demonstration.\n");
+  const file = { name: "example.txt", mimeType: "text/plain", buffer: content };
+  const sha256 = createHash("sha256").update(content).digest("hex");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "HashReviewer", exact: true })).toBeVisible();
+  await page.screenshot({ path: "../docs/screenshots/home.png", fullPage: true });
+  await page.goto("/check");
+  await page.getByLabel("Drop a file here").setInputFiles(file);
+  await expect(page.getByTestId("sha256")).toHaveText(sha256);
+  await expect(page.getByText("Reputation lookup is unavailable.", { exact: true })).toBeVisible();
+  await page.screenshot({ path: "../docs/screenshots/check.png", fullPage: true });
+  await page.goto("/verify");
+  await page.getByLabel("File to verify").setInputFiles(file);
+  const receipt = { format: "hashreviewer.integrity-receipt", version: 1, filename: file.name, size: content.length, sha256, createdAt: "2026-10-04T00:00:00.000Z" };
+  await page.getByLabel("Integrity receipt", { exact: true }).setInputFiles({ name: "example.txt.integrity.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(receipt)) });
+  await expect(page.getByRole("heading", { name: "VERIFIED", exact: true })).toBeVisible();
+  await page.screenshot({ path: "../docs/screenshots/verify.png", fullPage: true });
+  await page.goto("/compare");
+  await page.getByLabel("File A", { exact: true }).setInputFiles(file);
+  await page.getByLabel("File B", { exact: true }).setInputFiles({ ...file, name: "example-revised.txt", buffer: Buffer.concat([content, Buffer.from("An added line.\n")]) });
+  await expect(page.getByRole("heading", { name: "DIFFERENT", exact: true })).toBeVisible();
+  await page.screenshot({ path: "../docs/screenshots/compare.png", fullPage: true });
+});

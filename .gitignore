@@ -1,0 +1,58 @@
+# Dependencies and build products
+node_modules/
+.venv/
+dist/
+frontend-dist/
+coverage/
+htmlcov/
+*.egg-info/
+*.whl
+# Secrets and private configuration
+.env*
+!.env.example
+secrets/
+*.pem
+*.key
+# Runtime data and generated receipts
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
+*.sqlite-*
+*.log
+*.pid
+*.integrity.json
+.runtime/
+.analysis-tmp/
+# Caches and temporary test output
+__pycache__/
+*.py[cod]
+.coverage*
+.pytest_cache/
+.pytest-tmp*/
+.mypy_cache/
+.mypy-cache*/
+.ruff_cache/
+.ruff-cache*/
+.npm-cache*/
+.pip-audit-cache/
+.pip-cache/
+.pycache-root/
+.vite/
+.vite-cache/
+.tsbuildinfo/
+*.tsbuildinfo
+playwright-report/
+playwright-results/
+test-results/
+.tmp/
+*.tmp
+.DS_Store
+Thumbs.db
+# Local editor settings and backups
+.idea/
+.vscode/
+.agents/
+*.bak
+*.orig
+*.rej
