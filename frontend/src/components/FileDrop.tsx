@@ -15,7 +15,7 @@ export function FileDrop({ label, hint = "Any file type. Read locally in your br
   const id = useId();
   const [dragging, setDragging] = useState(false);
   return (
-    <div className={`file-drop ${compact ? "file-drop--compact" : ""} ${dragging ? "is-dragging" : ""}`}
+    <div className={`file-drop ${compact ? "file-drop--compact" : ""} ${dragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
       onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
       onDrop={(event) => { event.preventDefault(); setDragging(false); const selected = event.dataTransfer.files[0]; if (selected) onSelect(selected); }}>

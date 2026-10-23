@@ -1,5 +1,9 @@
 .git
 .agents
+.analysis-tmp
+.runtime
+**/.runtime
+**/.*cache*
 .github
 .env*
 .venv

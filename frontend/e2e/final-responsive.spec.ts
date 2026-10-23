@@ -3,11 +3,14 @@ import { createHash } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 
 test("mobile pages and results fit without horizontal scrolling", async ({ page }) => {
+  test.setTimeout(90000);
   await page.route((url) => url.pathname.startsWith("/api/"), (route) => route.fulfill({ json: { available: false } }));
   const fixture = { name: "long-filename-for-mobile-integrity-check.txt", mimeType: "text/plain", buffer: Buffer.from("abc") };
-  for (const path of ["/", "/check", "/verify", "/compare", "/about"]) {
+  for (const path of ["/", "/verify", "/compare", "/about"]) {
     await page.goto(path);
-    if (path === "/check") {
+    await expect(page.locator("main > div")).toHaveCSS("opacity", "1");
+    if (path === "/") await expect(page.locator(".landing-checker")).toHaveCSS("opacity", "1");
+    if (path === "/") {
       await page.getByLabel("Drop a file here").setInputFiles(fixture);
       await expect(page.getByTestId("sha256")).toBeVisible();
     }

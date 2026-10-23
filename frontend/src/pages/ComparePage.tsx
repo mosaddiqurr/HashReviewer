@@ -3,6 +3,7 @@ import { FileDrop } from "../components/FileDrop";
 import { HashProgress } from "../components/HashProgress";
 import { CopyButton } from "../components/CopyButton";
 import { Icon } from "../components/Icon";
+import { PageHeading } from "../components/PageHeading";
 import { useFileHasher } from "../hashing/useFileHasher";
 import { compareFiles } from "../integrity/receipt";
 import { formatBytes } from "../utilities/format";
@@ -14,7 +15,7 @@ export function ComparePage() {
   const b = useFileHasher(false);
   const result = fileA && fileB && a.state.hashes && b.state.hashes ? compareFiles({ size: fileA.size, sha256: a.state.hashes.sha256 }, { size: fileB.size, sha256: b.state.hashes.sha256 }) : null;
   return <div className="page">
-    <header className="page-header"><p className="eyebrow">Two files. One answer.</p><h1>Compare two files</h1><p>Check whether two files contain the same bytes, even if their names differ.</p></header>
+    <PageHeading title="Compare two files">Check whether two files contain the same bytes, even if their names differ.</PageHeading>
     <div className="two-columns"><section><h2 className="slot-heading"><span>A</span> First file</h2><FileDrop compact label="File A" file={fileA} onSelect={(selected) => { setFileA(selected); a.hashFile(selected); }} /><HashProgress state={a.state} onCancel={a.cancel} /></section><section><h2 className="slot-heading"><span>B</span> Second file</h2><FileDrop compact label="File B" file={fileB} onSelect={(selected) => { setFileB(selected); b.hashFile(selected); }} /><HashProgress state={b.state} onCancel={b.cancel} /></section></div>
     {result && fileA && fileB && a.state.hashes && b.state.hashes && <section className={`panel comparison-result result--${result.identical ? "match" : "changed"}`} aria-live="polite">
       <div className="result-heading"><span className="result-icon"><Icon name={result.identical ? "check" : "different"} /></span><div><h2>{result.identical ? "IDENTICAL" : "DIFFERENT"}</h2><p>{result.identical ? "Both files have the same SHA-256 and size." : "These files do not have the same fingerprint."}</p></div></div>

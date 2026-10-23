@@ -13,20 +13,24 @@ async function noReputation(page: Page) {
   await page.route((url) => url.pathname.startsWith("/api/"), (route) => route.fulfill({ json: { available: false } }));
 }
 async function check(page: Page) {
-  await page.goto("/check");
+  await page.goto("/");
   await page.getByLabel("Drop a file here").setInputFiles(fixture);
-  await expect(page.getByTestId("sha256")).toHaveText(sha256);
+  await expect(page.getByTestId("sha256")).toHaveText(sha256, { timeout: 15000 });
 }
 
-test("home explains the product and presents only five navigation links", async ({ page }) => {
+test("home is the only file checker and legacy links redirect to it", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "HashReviewer", exact: true })).toBeVisible();
-  await expect(page.getByText("Verify file integrity and review hash reputation.")).toBeVisible();
-  await expect(page.getByRole("navigation").getByRole("link")).toHaveText(["Home", "Check File", "Verify", "Compare", "About"]);
-  await page.getByRole("link", { name: "Check a file", exact: true }).click();
-  await expect(page).toHaveURL(/\/check$/);
+  await expect(page.getByRole("heading", { name: "Every byte. Accounted for.", exact: true })).toBeVisible();
+  await expect(page.getByText("Drop a file here", { exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link")).toHaveText(["Home", "Verify", "Compare", "About"]);
+  await page.getByLabel("Drop a file here").setInputFiles(fixture);
+  await expect(page.getByTestId("sha256")).toHaveText(sha256);
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/check");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel("Drop a file here")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -96,7 +100,8 @@ test("invalid and oversized receipts show a simple error and can be replaced", a
   await expect(page.getByRole("heading", { name: "VERIFIED", exact: true })).toHaveCount(0);
 });
 
-test("compare identical files, renamed files, same-length changes, and different sizes locally", async ({ page }) => {
+test("compare identical files, renamed files, same-length changes, and different sizes locally", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const apiRequests: string[] = [];
   page.on("request", (request) => { if (new URL(request.url()).pathname.startsWith("/api/")) apiRequests.push(request.url()); });
   await page.goto("/compare");
@@ -109,11 +114,18 @@ test("compare identical files, renamed files, same-length changes, and different
   await expect(page.getByText("0 bytes · Same size")).toBeVisible();
   await page.getByLabel("File B", { exact: true }).setInputFiles({ ...fixture, buffer: Buffer.concat([content, Buffer.from("extra")]) });
   await expect(page.getByText("5 bytes · File B is larger")).toBeVisible();
+  for (const [label, bytes] of [["File A", content], ["File B", Buffer.concat([content, Buffer.from("extra")])]] as const) {
+    await page.getByRole("button", { name: `Copy ${label} SHA-256`, exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(createHash("sha256").update(bytes).digest("hex"));
+  }
+  await page.getByRole("button", { name: "Clear both files", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "DIFFERENT", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear both files", exact: true })).toHaveCount(0);
   expect(apiRequests).toEqual([]);
 });
 
 test("empty files have standard hashes and verify correctly", async ({ page }) => {
-  await noReputation(page); await page.goto("/check");
+  await noReputation(page); await page.goto("/");
   await page.getByLabel("Drop a file here").setInputFiles({ ...fixture, name: "empty.txt", buffer: Buffer.alloc(0) });
   for (const algorithm of ["sha256", "sha1", "md5"]) await expect(page.getByTestId(algorithm)).toHaveText(createHash(algorithm).digest("hex"));
   await page.goto("/verify");
@@ -127,7 +139,7 @@ test("a 64 MiB file streams correctly without sending its contents", async ({ pa
   const network: { method: string; body: string | null }[] = [];
   page.on("request", (request) => network.push({ method: request.method(), body: request.postData() }));
   await noReputation(page);
-  await page.goto("/check");
+  await page.goto("/");
   await page.getByLabel("Drop a file here").evaluate((input: HTMLInputElement) => {
     const chunk = new Uint8Array(4 * 1024 * 1024);
     const transfer = new DataTransfer();
@@ -146,7 +158,7 @@ test("a 64 MiB file streams correctly without sending its contents", async ({ pa
 
 test("cancel a running worker, repeat a check, clear, and refresh without saved file state", async ({ page }) => {
   await noReputation(page);
-  await page.goto("/check");
+  await page.goto("/");
   await page.getByLabel("Drop a file here").evaluate((input: HTMLInputElement) => {
     const chunk = new Uint8Array(4 * 1024 * 1024);
     const transfer = new DataTransfer();
@@ -196,7 +208,7 @@ test("contradictory reputation evidence is rejected and a later request can reco
 });
 
 test("drag-and-drop hashes a file in the browser", async ({ page }) => {
-  await noReputation(page); await page.goto("/check");
+  await noReputation(page); await page.goto("/");
   const dataTransfer = await page.evaluateHandle(() => { const transfer = new DataTransfer(); transfer.items.add(new File(["abc"], "dropped.txt", { type: "text/plain" })); return transfer; });
   await page.locator(".file-drop").dispatchEvent("drop", { dataTransfer });
   await expect(page.getByTestId("sha256")).toHaveText(createHash("sha256").update("abc").digest("hex"));
@@ -234,7 +246,7 @@ test("offline reputation and provider failures leave receipts usable", async ({ 
 
 test("read errors are concise and a new file can recover", async ({ page }) => {
   await page.route("**/src/hashing/hash.worker.ts*", (route) => route.fulfill({ contentType: "text/javascript", body: 'self.onmessage = () => self.postMessage({type:"error"});' }));
-  await page.goto("/check");
+  await page.goto("/");
   await page.getByLabel("Drop a file here").setInputFiles(fixture);
   await expect(page.getByRole("alert")).toHaveText("Could not read this file.");
   await page.unroute("**/src/hashing/hash.worker.ts*");
@@ -244,8 +256,10 @@ test("read errors are concise and a new file can recover", async ({ page }) => {
 
 test("all public pages pass accessibility checks and About has the correct creator link", async ({ page }) => {
   await noReputation(page);
-  for (const path of ["/", "/check", "/verify", "/compare", "/about"]) {
+  for (const path of ["/", "/verify", "/compare", "/about"]) {
     await page.goto(path);
+    await expect(page.locator("main > div")).toHaveCSS("opacity", "1");
+    if (path === "/") await expect(page.locator(".landing-checker")).toHaveCSS("opacity", "1");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
   const creator = page.getByRole("link", { name: "Mosaddiqur Rahman ↗" });
@@ -254,4 +268,61 @@ test("all public pages pass accessibility checks and About has the correct creat
   await expect(creator).toHaveAttribute("rel", "noopener noreferrer");
   await page.goto("/history");
   await expect(page.getByRole("heading", { name: "Let’s check a file." })).toBeVisible();
+});
+
+test("landing-page checks support receipts, replacing files, and clearing without navigation", async ({ page }) => {
+  const requests: { url: string; method: string; body: string | null }[] = [];
+  await page.route((url) => url.pathname.startsWith("/api/"), (route) => {
+    const request = route.request();
+    requests.push({ url: request.url(), method: request.method(), body: request.postData() });
+    return route.fulfill({ json: { available: false } });
+  });
+  await page.goto("/");
+  await page.getByLabel("Drop a file here").setInputFiles(fixture);
+  for (const algorithm of ["sha256", "sha1", "md5"]) await expect(page.getByTestId(algorithm)).toHaveText(createHash(algorithm).update(content).digest("hex"));
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Create integrity receipt", exact: true }).click();
+  const download = await downloadPromise;
+  const downloaded = JSON.parse(await readFile((await download.path())!, "utf8"));
+  expect(downloaded.sha256).toBe(sha256);
+  expect(downloaded.filename).toBe(fixture.name);
+  expect(requests.every((request) => request.url.endsWith("/api/reputation/status") && request.method === "GET" && request.body === null)).toBe(true);
+  await page.getByLabel("Drop a file here").setInputFiles({ ...fixture, buffer: Buffer.from("changed") });
+  await expect(page.getByTestId("sha256")).toHaveText(createHash("sha256").update("changed").digest("hex"));
+  await page.getByRole("button", { name: "Clear file", exact: true }).click();
+  await expect(page.getByTestId("sha256")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("sample checks, automatic animations, and both themes work across navigation", async ({ page }) => {
+  test.setTimeout(60000);
+  await noReputation(page);
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: "Try a sample file", exact: true }).click();
+  await expect(page.getByTestId("sha256")).toHaveText(createHash("sha256").update("abc").digest("hex"));
+  await expect(page.getByRole("button", { name: /Pause animations|Resume animations/ })).toHaveCount(0);
+  expect(await page.locator(".paper-grid").evaluate((element) => getComputedStyle(element, "::after").animationPlayState)).toBe("running");
+  expect(await page.locator(".paper-grid").evaluate((element) => getComputedStyle(element, "::after").animationName)).toBe("paper-scan");
+  for (const theme of ["light", "dark"]) {
+    if (theme === "dark") await page.getByRole("button", { name: "Switch to dark theme", exact: true }).click();
+    for (const label of ["Verify", "Compare", "About", "Home"]) {
+      await page.getByRole("navigation").getByRole("link", { name: label, exact: true }).click();
+      await expect(page.locator("main > div")).toHaveCSS("opacity", "1");
+      if (label === "Home") await expect(page.locator(".landing-checker")).toHaveCSS("opacity", "1");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    }
+  }
+  expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual({ local: 0, session: 0 });
+});
+
+test("reduced motion leaves the background still and landing checks usable", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await noReputation(page);
+  await page.goto("/");
+  await expect(page.locator(".landing-checker")).toHaveCSS("opacity", "1");
+  expect(await page.locator(".paper-grid").evaluate((element) => getComputedStyle(element, "::after").animationName)).toBe("none");
+  await page.getByLabel("Drop a file here").setInputFiles(fixture);
+  await expect(page.getByTestId("sha256")).toHaveText(sha256);
 });

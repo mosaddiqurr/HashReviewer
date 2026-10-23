@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FileDrop } from "../components/FileDrop";
 import { HashProgress } from "../components/HashProgress";
 import { Icon } from "../components/Icon";
+import { PageHeading } from "../components/PageHeading";
 import { useFileHasher } from "../hashing/useFileHasher";
 import { MAX_RECEIPT_BYTES, parseReceipt, verifyReceipt, type IntegrityReceipt } from "../integrity/receipt";
 
@@ -28,7 +29,7 @@ export function VerifyPage() {
   const result = file && state.hashes && receipt ? verifyReceipt(file, state.hashes.sha256, receipt) : null;
   function clear() { receiptTask.current++; setFile(null); setReceiptFile(null); setReceipt(null); setReceiptError(""); setReading(false); reset(); }
   return <div className="page">
-    <header className="page-header"><p className="eyebrow">The same file, confirmed</p><h1>Verify a receipt</h1><p>Choose a file and its integrity receipt. We’ll check whether the contents match.</p></header>
+    <PageHeading title="Verify a receipt">Choose a file and its integrity receipt. We’ll check whether the contents match.</PageHeading>
     <div className="two-columns"><section><h2 className="slot-heading"><span>01</span> Current file</h2><FileDrop compact label="File to verify" file={file} onSelect={(selected) => { setFile(selected); hashFile(selected); }} /><HashProgress state={state} onCancel={cancel} /></section><section><h2 className="slot-heading"><span>02</span> Integrity receipt</h2><FileDrop compact label="Integrity receipt" hint="Choose the .integrity.json receipt." file={receiptFile} onSelect={(selected) => void selectReceipt(selected)} accept=".json,application/json" />{reading && <p role="status" className="muted">Reading receipt…</p>}{receiptError && <p className="error-message" role="alert">{receiptError}</p>}</section></div>
     {result && file && receipt && state.hashes && <section className={`panel verification-result result--${result.verified ? "match" : "changed"}`} aria-live="polite">
       <div className="result-heading"><span className="result-icon"><Icon name={result.verified ? "check" : "different"} /></span><div><h2>{result.verified ? "VERIFIED" : "CHANGED"}</h2><p>{result.verified ? "File matches the receipt." : result.sha256Matches ? "The file size does not match the receipt." : "The current file does not match the recorded SHA-256."}</p></div></div>
@@ -42,6 +43,6 @@ export function VerifyPage() {
       <p className="small-note">Recorded {new Date(receipt.createdAt).toLocaleString()}. This receipt is unsigned; verification assumes you trust the receipt.</p>
     </section>}
     {!result && !receiptError && <div className="empty-note"><Icon name="receipt" /><p>Your result appears when both files are ready.</p></div>}
-    <div className="page-bottom"><p>Need a receipt? <Link to="/check">Check a file</Link> to create one.</p>{(file || receiptFile) && <button className="text-button" onClick={clear}>Clear both files</button>}</div>
+    <div className="page-bottom"><p>Need a receipt? <Link to="/">Check a file on Home</Link> to create one.</p>{(file || receiptFile) && <button className="text-button" onClick={clear}>Clear both files</button>}</div>
   </div>;
 }

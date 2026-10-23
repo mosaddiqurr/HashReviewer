@@ -29,7 +29,7 @@ After building, `npm run e2e:production` runs the desktop workflows and both mob
 npm run screenshots
 ```
 
-The screenshot script regenerates `docs/screenshots/home.png`, `check.png`, `verify.png`, and `compare.png` using harmless fixtures. Screenshot generation is separate from normal test runs so CI does not rewrite documentation assets.
+The screenshot script regenerates `docs/screenshots/home.png`, `home-hero.png`, `home-results.png`, `verify-clean.png`, `verify.png`, and `compare.png` using harmless fixtures. Home is the only file checker; the former `/check` route redirects there. Screenshot generation is separate from normal test runs so CI does not rewrite documentation assets.
 
 ## Backend
 
@@ -50,28 +50,29 @@ Live VirusTotal validation needs a legitimate configured key and available provi
 
 Before publication, confirm the production build, frontend and backend tests, lint, dependency audits, fresh screenshots, and a source-file secret scan. Keep `.env`, generated receipts, databases, logs, dependency directories, build outputs, and test artifacts out of the publication set.
 
-Review the staged publication files with `git diff --cached --check`, `git diff --cached --stat`, and `git diff --cached` before committing. Scan the exact staged file set for credentials and private paths. The initial release has no earlier commit history to audit.
+Review the staged publication files with `git diff --cached --check`, `git diff --cached --stat`, and `git diff --cached` before committing. Scan the exact staged file set for credentials and private paths. Review the exact candidate changes and keep local validation artifacts out of the commit.
 
-### Validated on 5 October 2026
+### Validated on 23 October 2026
 
 | Check | Result |
 | --- | --- |
 | Frontend unit tests | 62 passed |
 | Backend tests | 33 passed |
 | Frontend and backend lint | Passed |
-| Desktop and mobile browser suite | 19 passed; documentation screenshot generator skipped in normal runs |
-| Compiled-app desktop and mobile workflows | 18 passed |
-| Production build | Passed with the original logo and a separate hashing worker |
-| Backend startup and installed dependencies | Uvicorn started; health 200, disabled reputation status 200, lookup without key 503; pip check passed |
-| npm audit and locked backend pip-audit | No known vulnerabilities found |
-| Documentation screenshots | Four newly generated images, visually inspected |
-| Publication files | 67 source, configuration, documentation, lockfile, and asset files scanned; no development attribution, credential-like literals, or private-file paths found |
-| Docker Compose | Configuration validated |
+| TypeScript and production build | Passed |
+| Development desktop and mobile browser suite | 22 passed; documentation screenshot generator skipped in normal runs |
+| Compiled-app desktop and mobile browser suite | 21 passed |
+| npm audit | No known vulnerabilities reported |
+| Locked backend pip-audit | No known vulnerabilities reported |
+| Backend dependency consistency | pip check passed |
+| Documentation screenshots | Six refreshed images |
+| Docker images | Frontend and optional backend built successfully |
+| Container runtime | Static routes, headers, assets, absent backend, and credential-free optional backend passed |
 
-The environment used Node.js 24.15.0 and Python 3.12.10. The real worker hashed a 64 MiB file and a running 256 MiB job was cancelled before restarting. Browser tests cover repeated selection, clearing results, refresh without saved state, unavailable-backend recovery, and rejection of reputation verdicts inconsistent with the reported counts. Automated accessibility checks cover all five pages, mobile results, and a reputation result.
+The real browser worker hashed a 64 MiB file, and a running 256 MiB check was cancelled before restarting. Tests cover the Home checker, the legacy /check redirect, receipts, changed and renamed files, comparison copy and clear actions, both themes, automatic and reduced motion, and error recovery. Automated accessibility and overflow checks cover all four current pages and mobile result layouts.
 
-Tests cover configured reputation through synthetic provider responses; a live VirusTotal request was not made because no real key was supplied. Docker image builds and container behavior were not validated locally because the Docker daemon was unavailable. Compose configuration passed; CI now includes image builds and runtime checks for static routes, assets, security headers, an absent backend, and disabled reputation. Those new container checks await their first CI run.
+The repository's previous container CI failure was reproduced as an attempt to create Nginx temporary directories on a read-only filesystem. All temporary paths now use the existing /tmp mount; the container remains unprivileged with a read-only root filesystem. Static routes, the SVG favicon, security headers, missing assets, and unavailable-backend handling passed local container checks.
 
-The backend tests emit a dependency deprecation warning about Starlette's HTTPX-based TestClient. All tests pass; the application provider client and runtime startup remain functional.
+Tests use synthetic provider reports. A live VirusTotal request was not made; provider authentication and quota require a legitimate configured key. Backend tests emit a Starlette TestClient deprecation warning and all 33 pass. Automated accessibility checks do not replace manual assistive-technology testing.
 
-Dependency audits and source scans are checks at the time of validation. Repeat them before a later release. See [release readiness](RELEASE_READINESS.md) for the current release checks.
+Dependency audits are point-in-time checks. Repeat them before a later release. See [release readiness](RELEASE_READINESS.md) for the publication scope and deployment limits.

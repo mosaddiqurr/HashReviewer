@@ -1,6 +1,8 @@
-<p align="center"><img src="assets/logo-hash.png" width="96" alt="HashReviewer logo"></p>
+<p align="center"><img src="assets/favicon.svg" width="72" alt="HashReviewer logo"></p>
 <h1 align="center">HashReviewer</h1>
 <p align="center">Check file fingerprints, compare files and optionally review hash reputation without uploading file contents.</p>
+
+[![CI](https://github.com/mosaddiqurr/HashReviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/mosaddiqurr/HashReviewer/actions/workflows/ci.yml)
 
 ## Overview
 
@@ -12,27 +14,29 @@ Drop a file, read its hashes, and save an integrity receipt. Later, verify it ag
 
 | Workflow | What you get |
 | --- | --- |
-| Check File | SHA-256, SHA-1, MD5, filename, size, and copy actions |
+| Check a file on Home | SHA-256, SHA-1, MD5, filename, size, and copy actions |
 | Integrity Receipt | A small, unsigned JSON record to download and verify later |
 | Compare | IDENTICAL or DIFFERENT, both SHA-256 values, and size difference |
 | Reputation | Optional VirusTotal hash lookup with counts and a concise explanation |
 
-Navigation: **Home · Check File · Verify · Compare · About**. No accounts, database, saved history, or file uploads.
+Navigation: **Home · Verify · Compare · About**. Home is the single file-checking workspace; existing `/check` links redirect there. No accounts, database, saved history, or file uploads.
+
+The paper-and-vermilion interface puts the real file checker directly on the landing page. It includes light and dark themes and a subtle animated scan rule that runs automatically. Reduced-motion preferences are respected. See [interface design notes](docs/DESIGN.md).
 
 ## Screenshots
 
 These images show the current interface with harmless demonstration files.
 
-| Home | Check File |
+| Home | File check results |
 | --- | --- |
-| ![Home](docs/screenshots/home.png) | ![Check File](docs/screenshots/check.png) |
+| ![Home](docs/screenshots/home.png) | ![File check results](docs/screenshots/home-results.png) |
 | Verify | Compare |
 | ![Verify](docs/screenshots/verify.png) | ![Compare](docs/screenshots/compare.png) |
 
 ## Core workflows and hashing model
 
 1. Select or drop a file. A browser worker reads it in 4 MiB chunks.
-2. Check File calculates all three hashes in one pass, with SHA-256 primary.
+2. The Home checker calculates all three hashes in one pass, with SHA-256 primary.
 3. Create a receipt to record the expected fingerprint.
 4. Verify checks SHA-256 and size. Filename changes are reported separately.
 5. Compare checks both SHA-256 fingerprints and file sizes.
@@ -171,7 +175,7 @@ cd backend
 ../.venv/bin/python -m ruff check .
 ~~~
 
-On Windows, use "..\.venv\Scripts\python.exe". Browser tests use an isolated server on port 5180. Provider tests use synthetic reports and do not require a real key. See [testing and validation](docs/TESTING.md).
+On Windows, use "..\.venv\Scripts\python.exe". Browser tests use an isolated server on port 5180. Provider tests use synthetic reports and do not require a real key. See [testing and validation](docs/TESTING.md) and the [changelog](CHANGELOG.md).
 
 ## Limitations
 

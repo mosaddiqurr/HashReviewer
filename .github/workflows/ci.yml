@@ -60,8 +60,9 @@ jobs:
                   assert b'<div id="root">' in response.read()
                   assert "worker-src 'self'" in response.headers["Content-Security-Policy"]
                   assert response.headers["X-Content-Type-Options"] == "nosniff"
-          with urllib.request.urlopen(base + "/logo-hash.png", timeout=5) as response:
-              assert response.headers["Content-Type"] == "image/png"
+          with urllib.request.urlopen(base + "/favicon.svg", timeout=5) as response:
+              assert response.headers["Content-Type"] == "image/svg+xml"
+              assert b"<svg" in response.read()
           for path, expected in [("/assets/missing.js", 404), ("/api/reputation/status", 503)]:
               try:
                   urllib.request.urlopen(base + path, timeout=5)
@@ -91,5 +92,8 @@ jobs:
                       assert response.headers["Cache-Control"] == "no-store"
                   break
           PY
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose --profile reputation logs --no-color
       - if: always()
         run: docker compose --profile reputation down

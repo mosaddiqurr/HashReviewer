@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileDrop } from "../components/FileDrop";
-import { HashProgress } from "../components/HashProgress";
-import { CopyButton } from "../components/CopyButton";
-import { Icon } from "../components/Icon";
-import { Reputation } from "../components/Reputation";
+import { FileDrop } from "./FileDrop";
+import { HashProgress } from "./HashProgress";
+import { CopyButton } from "./CopyButton";
+import { Icon } from "./Icon";
+import { Reputation } from "./Reputation";
 import { useFileHasher } from "../hashing/useFileHasher";
 import { createReceipt, downloadReceipt } from "../integrity/receipt";
 import { formatBytes } from "../utilities/format";
 
-export function CheckPage() {
+export function FileChecker() {
   const [file, setFile] = useState<File | null>(null);
   const [receiptMessage, setReceiptMessage] = useState("");
   const { state, hashFile, cancel, reset } = useFileHasher();
@@ -20,10 +20,16 @@ export function CheckPage() {
     try { downloadReceipt(createReceipt(file, hashes)); setReceiptMessage("Integrity receipt created."); }
     catch { setReceiptMessage("Could not download the receipt. Please try again."); }
   }
-  return <div className="page">
-    <header className="page-header"><p className="eyebrow">Start with a fingerprint</p><h1>Check a file</h1><p>Drop a file to calculate its hashes. It stays on your device.</p></header>
-    <FileDrop label="Drop a file here" file={file} onSelect={selectFile} />
-    <HashProgress state={state} onCancel={cancel} />
+  return <section id="file-checker" className="file-checker" aria-label="Check a file">
+    <div className="checker-masthead"><span><Icon name="fingerprint" />File checker</span><span className="checker-status"><span />{state.status === "hashing" ? "Calculating locally" : hashes ? "Fingerprint ready" : "Ready for your file"}</span></div>
+    <div className="checker-body">
+      <div className="checker-input"><FileDrop label="Drop a file here" hint="Any format. Every byte stays on your device." file={file} onSelect={selectFile} /><HashProgress state={state} onCancel={cancel} />
+        {file && <button className="text-button clear-button" onClick={() => { setFile(null); setReceiptMessage(""); reset(); }}>Clear file<Icon name="different" /></button>}
+      </div>
+      <aside className="checker-notes" aria-label="How this check works"><h2>A small check. <br />A clear answer.</h2><ol><li><span>01</span><div><strong>Choose any file</strong><p>Documents, downloads, archives. You name it.</p></div></li><li><span>02</span><div><strong>Get its fingerprint</strong><p>SHA-256, SHA-1, and MD5. In one pass.</p></div></li><li><span>03</span><div><strong>Keep a reference</strong><p>Save a receipt to verify the file later.</p></div></li></ol>
+        <button className="text-button sample-button" disabled={state.status === "hashing"} onClick={() => selectFile(new File(["abc"], "sample.txt", { type: "text/plain" }))}>Try a sample file<Icon name="arrow" /></button>
+      </aside>
+    </div>
     {hashes && file && <div className="check-results">
       <section className="panel hashes-panel" aria-label="File hashes">
         <div className="section-heading"><div><h2>File fingerprint</h2><p className="file-meta">{file.name} <span>· {formatBytes(file.size)} ({file.size.toLocaleString()} bytes)</span></p></div><span className="badge">Calculated locally</span></div>
@@ -36,6 +42,6 @@ export function CheckPage() {
       <div className="integrity-line"><Icon name="info" /><span><strong>Integrity</strong> No receipt checked</span></div>
       <Reputation key={hashes.sha256} sha256={hashes.sha256} />
     </div>}
-    {file && <button className="text-button clear-button" onClick={() => { setFile(null); setReceiptMessage(""); reset(); }}>Clear file</button>}
-  </div>;
+    <div className="checker-footnote"><Icon name="lock" /><span>No uploads. No account. Just your browser.</span><span className="checker-footnote-detail">PRIVATE BY DEFAULT</span></div>
+  </section>;
 }

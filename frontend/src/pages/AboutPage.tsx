@@ -1,6 +1,6 @@
 export function AboutPage() {
   return <div className="page about-page">
-    <header className="page-header about-header"><img src="/logo-hash.png" width="72" height="72" alt="HashReviewer logo" /><div><p className="eyebrow">A little clarity goes a long way</p><h1>About HashReviewer</h1><p>Verify file integrity and review hash reputation.</p></div></header>
+    <header className="page-header about-header"><div><p className="eyebrow">A little clarity goes a long way</p><h1>About HashReviewer</h1><p>Verify file integrity and review hash reputation.</p></div></header>
     <div className="about-sections">
       <section><h2>A simple check for the file you expected.</h2><p>Calculate a file’s fingerprint, save an integrity receipt, verify it later, or compare two files. Optionally check whether VirusTotal has a reputation report for the fingerprint.</p></section>
       <section><h2>Your file stays on your device.</h2><p>Hash calculation, receipt creation, verification, and comparison happen in your browser. HashReviewer does not upload file contents or keep a history. An optional reputation lookup sends only SHA-256 to the configured backend and VirusTotal.</p><p className="small-note">A hash can identify a known file. The backend, provider, and hosting infrastructure may see the queried hash and network information. Downloaded receipts contain the filename and size; share them thoughtfully.</p></section>

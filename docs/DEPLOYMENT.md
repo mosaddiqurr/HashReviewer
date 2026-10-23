@@ -4,7 +4,7 @@ The frontend is a static React/Vite app. Its core file operations require no ser
 
 ## Static hosting
 
-Run `npm ci` and `npm run build` from `frontend`. Publish `frontend/dist` at your site's root. Serve over HTTPS and rewrite `/check`, `/verify`, `/compare`, `/about`, and other application paths to `index.html`. Return missing static assets as 404 responses.
+Run `npm ci` and `npm run build` from `frontend`. Publish `frontend/dist` at your site's root. Serve over HTTPS and rewrite `/check`, `/verify`, `/compare`, `/about`, and other application paths to `index.html`. The app redirects legacy `/check` links to Home. Return missing static assets as 404 responses.
 
 The app is intended for origin-root hosting. A GitHub Pages repository subpath needs base-path and router configuration before deployment; GitHub repository publication itself needs no such changes.
 
@@ -54,6 +54,6 @@ To enable the backend, copy `.env.example` to `.env`, set the server key, and ru
 docker compose --profile reputation up --build
 ```
 
-The backend is reachable only on the internal Compose network; it has no published host port. Both containers run as a non-root user with a read-only root filesystem and temporary storage. The frontend image copies the original logo from `assets` using the repository as build context.
+The backend is reachable only on the internal Compose network; it has no published host port. Both containers run as a non-root user with a read-only root filesystem and temporary storage. The frontend image copies the bundled fonts and static assets, including the SVG favicon, using the repository as build context.
 
 Terminate HTTPS at the hosting gateway. The included port 8080 listener is for local use or behind that gateway. Vite's development and preview servers are local validation tools.
