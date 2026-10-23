@@ -5,8 +5,9 @@ export interface HashState {
   status: "idle" | "hashing" | "complete" | "error" | "cancelled";
   progress: number;
   hashes: FileHashes | null;
+  errorKind: "worker" | "file" | null;
 }
-const initialState: HashState = { status: "idle", progress: 0, hashes: null };
+const initialState: HashState = { status: "idle", progress: 0, hashes: null, errorKind: null };
 
 export function useFileHasher(includeLegacy = true) {
   const [state, setState] = useState<HashState>(initialState);
@@ -21,15 +22,15 @@ export function useFileHasher(includeLegacy = true) {
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<{ type: "progress" | "complete" | "error"; progress: number; hashes: FileHashes }>) => {
         if (workerRef.current !== worker) return;
-        if (event.data.type === "progress") setState({ status: "hashing", progress: event.data.progress, hashes: null });
+        if (event.data.type === "progress") setState({ ...initialState, status: "hashing", progress: event.data.progress });
         else {
-          setState(event.data.type === "complete" ? { status: "complete", progress: 100, hashes: event.data.hashes } : { ...initialState, status: "error" });
+          setState(event.data.type === "complete" ? { ...initialState, status: "complete", progress: 100, hashes: event.data.hashes } : { ...initialState, status: "error", errorKind: "file" });
           stop();
         }
       };
-      worker.onerror = () => { if (workerRef.current === worker) { stop(); setState({ ...initialState, status: "error" }); } };
+      worker.onerror = () => { if (workerRef.current === worker) { stop(); setState({ ...initialState, status: "error", errorKind: "worker" }); } };
       worker.postMessage({ file, includeLegacy });
-    } catch { stop(); setState({ ...initialState, status: "error" }); }
+    } catch { stop(); setState({ ...initialState, status: "error", errorKind: "worker" }); }
   }, [includeLegacy, stop]);
   const cancel = useCallback(() => { stop(); setState({ ...initialState, status: "cancelled" }); }, [stop]);
   const reset = useCallback(() => { stop(); setState(initialState); }, [stop]);

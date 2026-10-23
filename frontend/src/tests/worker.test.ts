@@ -48,7 +48,22 @@ describe("worker lifetime and stale results", () => {
     const { result } = renderHook(() => useFileHasher());
     act(() => result.current.hashFile(new File(["file"], "file.txt")));
     act(() => TestWorker.instances[0].onerror?.(new ErrorEvent("error")));
-    expect(result.current.state).toMatchObject({ status: "error", hashes: null });
+    expect(result.current.state).toMatchObject({ status: "error", hashes: null, errorKind: "worker" });
     expect(TestWorker.instances[0].terminate).toHaveBeenCalledOnce();
+    act(() => result.current.hashFile(new File(["retry"], "retry.txt")));
+    expect(result.current.state).toMatchObject({ status: "hashing", errorKind: null });
+  });
+  it("distinguishes file read failures from worker startup failures", () => {
+    const { result } = renderHook(() => useFileHasher());
+    act(() => result.current.hashFile(new File(["file"], "file.txt")));
+    act(() => TestWorker.instances[0].onmessage?.({ data: { type: "error" } } as MessageEvent));
+    expect(result.current.state).toMatchObject({ status: "error", hashes: null, errorKind: "file" });
+    expect(TestWorker.instances[0].terminate).toHaveBeenCalledOnce();
+  });
+  it("reports worker construction failures without blaming the selected file", () => {
+    vi.stubGlobal("Worker", class { constructor() { throw new Error("Worker unavailable"); } });
+    const { result } = renderHook(() => useFileHasher());
+    act(() => result.current.hashFile(new File(["file"], "file.txt")));
+    expect(result.current.state).toMatchObject({ status: "error", hashes: null, errorKind: "worker" });
   });
 });

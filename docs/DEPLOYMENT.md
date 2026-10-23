@@ -8,6 +8,8 @@ Run `npm ci` and `npm run build` from `frontend`. Publish `frontend/dist` at you
 
 The app is intended for origin-root hosting. A GitHub Pages repository subpath needs base-path and router configuration before deployment; GitHub repository publication itself needs no such changes.
 
+Deploy builds atomically and retain previous hashed assets long enough for already-open tabs to finish using them. The hashing worker loads when a file is selected, so removing its previous asset can interrupt a check in an older tab. The app offers a page refresh when its worker cannot start. During local development, use `npm run dev`; refresh preview tabs after rebuilding production assets.
+
 Use the headers in `frontend/nginx.conf` as a reference: a restrictive same-origin content security policy with `worker-src 'self'`, no framing, no MIME sniffing, and no referrer disclosure. No external fonts or scripts are needed.
 
 ## Optional reputation backend

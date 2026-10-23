@@ -1,5 +1,10 @@
 # Changelog
 
+## 24 October 2026
+
+- Distinguish a missing or blocked hashing worker from an unreadable file, and provide a refresh action when the checker cannot start.
+- Add regression coverage for stale worker assets, refresh recovery, and hashing a dropped file after recovery.
+
 ## 23 October 2026
 
 - Redesign all pages with paper surfaces, vermilion accents, local variable fonts, and responsive ruled workspaces.

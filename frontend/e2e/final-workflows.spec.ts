@@ -254,6 +254,29 @@ test("read errors are concise and a new file can recover", async ({ page }) => {
   await expect(page.getByTestId("sha256")).toHaveText(sha256);
 });
 
+test("a stale worker asset offers refresh and file drops work after recovery", async ({ page }) => {
+  await noReputation(page);
+  await page.route("**/hash.worker*", (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Missing worker</title>" }));
+  await page.goto("/");
+  await page.getByLabel("Drop a file here").setInputFiles(fixture);
+  await expect(page.getByRole("alert")).toContainText("The file checker could not start. Refresh the page, then choose your file again.");
+  await expect(page.getByText("Could not read this file.", { exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("sha256")).toHaveCount(0);
+  await expect(page.locator("main > div")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".landing-checker")).toHaveCSS("opacity", "1");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.unroute("**/hash.worker*");
+  await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Refresh page", exact: true }).click()]);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  const transfer = await page.evaluateHandle(() => {
+    const data = new DataTransfer();
+    data.items.add(new File(["abc"], "recovered-drop.txt", { type: "text/plain" }));
+    return data;
+  });
+  await page.locator(".file-drop").dispatchEvent("drop", { dataTransfer: transfer });
+  for (const algorithm of ["sha256", "sha1", "md5"]) await expect(page.getByTestId(algorithm)).toHaveText(createHash(algorithm).update("abc").digest("hex"));
+});
+
 test("all public pages pass accessibility checks and About has the correct creator link", async ({ page }) => {
   await noReputation(page);
   for (const path of ["/", "/verify", "/compare", "/about"]) {

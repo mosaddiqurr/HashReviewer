@@ -44,6 +44,8 @@ These images show the current interface with harmless demonstration files.
 
 Hashing runs off the UI thread. Cancelling, replacing a file, or navigating away terminates its worker. Files are never executed.
 
+If the checker cannot start after an app update, use **Refresh page** and select the file again. An already-open tab can reference a worker asset from the previous build. This is separate from an unreadable file; the app reports these failures differently.
+
 ## Integrity receipts
 
 Receipts record metadata, **not the original file**. Downloads use the original filename followed by ".integrity.json".

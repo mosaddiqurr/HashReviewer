@@ -143,6 +143,7 @@ main { flex: 1; width: 100%; outline: none; }
 .integrity-line { display: flex; align-items: center; gap: 10px; padding: 0 3px; font-size: 11px; color: var(--muted); } .integrity-line .icon { width: 15px; } .integrity-line strong { color: var(--text); margin-right: 12px; }
 .provider-label { font-size: 10px; color: var(--muted); white-space: nowrap; } .reputation-panel > .button { margin-top: 18px; } .unavailable-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding-top: 12px; } .unavailable-row p { font-size: 11px; }
 .error-message { color: var(--red); background: var(--red-soft); border: 1px solid var(--red); padding: 12px 15px; border-radius: 2px; margin-top: 16px; font-size: 12px; overflow-wrap: anywhere; }
+.worker-error { display: grid; justify-items: start; gap: 8px; }
 .muted { font-size: 11px; color: var(--muted); margin-top: 12px; } .empty-note { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 40px 0; color: var(--subtle); } .empty-note .icon { width: 18px; } .empty-note p { font-size: 11px; }
 .page-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; border-top: 1px solid var(--border); padding-top: 21px; margin-top: 26px; } .page-bottom p { font-size: 11px; max-width: 100%; overflow-wrap: anywhere; }
 .verification-result, .comparison-result { margin-top: 29px; }
